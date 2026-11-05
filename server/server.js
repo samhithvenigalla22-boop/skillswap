@@ -125,12 +125,29 @@ const PORT = process.env.PORT || 5000;
 
 // Connect to DB and Start Server if run directly
 if (require.main === module) {
-  connectDB().then(() => {
+  connectDB().then(async () => {
+    // If the database has no users (e.g. fresh in-memory MongoDB or fresh Atlas), auto-seed demo data
+    try {
+      const User = require('./models/User');
+      const count = await User.countDocuments();
+      if (count === 0) {
+        console.log('Database empty: Auto-seeding initial demo users and skills...');
+        const { seedDemoData } = require('./scripts/seedDemoData');
+        await seedDemoData({ exitProcess: false });
+      }
+    } catch (seedErr) {
+      console.warn('Initial auto-seed check notice:', seedErr.message);
+    }
+
     server.listen(PORT, () => {
       console.log(`===============================================`);
       console.log(`SkillSwap Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
       console.log(`API URL: http://localhost:${PORT}/api`);
       console.log(`Client URL: ${clientUrl}`);
+      console.log(`Demo accounts:`);
+      console.log(`  Admin: admin@skillswap.com / Admin@123456`);
+      console.log(`  Alex:  alex@skillswap.com / Password@123`);
+      console.log(`  Maya:  maya@skillswap.com / Password@123`);
       console.log(`===============================================`);
     });
   });

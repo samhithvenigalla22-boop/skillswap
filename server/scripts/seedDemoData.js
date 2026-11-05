@@ -10,9 +10,11 @@ const Session = require('../models/Session');
 const Review = require('../models/Review');
 const Notification = require('../models/Notification');
 
-const seedDemoData = async () => {
+const seedDemoData = async ({ exitProcess = true } = {}) => {
   try {
-    await connectDB();
+    if (mongoose.connection.readyState === 0) {
+      await connectDB();
+    }
     console.log('Clearing existing demo data...');
 
     await Skill.deleteMany({});
@@ -278,7 +280,7 @@ const seedDemoData = async () => {
       offeredSkill: alexPython._id,
       requestedSkill: mayaUI._id,
       status: 'Active',
-      startedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7 days ago
+      startedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
     });
 
     // Messages in Active Swap
@@ -303,7 +305,7 @@ const seedDemoData = async () => {
       swapId: activeSwapAlexMaya._id,
       title: 'Python Core Fundamentals & Environment Setup',
       description: 'Hands-on review of virtual environments, pip, data types, and writing basic CLI scripts.',
-      scheduledDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // 2 days in future
+      scheduledDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
       startTime: '10:00',
       endTime: '11:30',
       meetingLink: 'https://meet.google.com/abc-defg-hij',
@@ -383,20 +385,24 @@ const seedDemoData = async () => {
     });
 
     console.log('Demo data successfully populated!');
-    console.log('Login credentials for demo users:');
+    console.log('Available accounts:');
     console.log('  Admin: admin@skillswap.com / Admin@123456');
     console.log('  Alex Rivera: alex@skillswap.com / Password@123');
     console.log('  Maya Chen: maya@skillswap.com / Password@123');
-    console.log('  Liam Johnson: liam@skillswap.com / Password@123');
-    console.log('  Sophia Patel: sophia@skillswap.com / Password@123');
-    console.log('  David Kim: david@skillswap.com / Password@123');
-    console.log('  Elena Rodriguez: elena@skillswap.com / Password@123');
 
-    process.exit(0);
+    if (exitProcess) {
+      process.exit(0);
+    }
   } catch (error) {
     console.error('Error seeding demo data:', error);
-    process.exit(1);
+    if (exitProcess) {
+      process.exit(1);
+    }
   }
 };
 
-seedDemoData();
+if (require.main === module) {
+  seedDemoData({ exitProcess: true });
+}
+
+module.exports = { seedDemoData };
