@@ -1,5 +1,6 @@
 const express = require('express');
 const http = require('http');
+const mongoose = require('mongoose');
 const { Server } = require('socket.io');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -26,13 +27,42 @@ const adminRoutes = require('./routes/adminRoutes');
 const app = express();
 const server = http.createServer(app);
 
-// Client origin configuration
-const clientUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+// Client origin configuration with trailing-slash sanitization
+const clientUrl = (process.env.CLIENT_URL || 'http://localhost:5173').replace(/\/+$/, '');
+const configuredOrigins = (process.env.CLIENT_URL || '')
+  .split(',')
+  .map((url) => url.trim().replace(/\/+$/, ''))
+  .filter(Boolean);
+
+const allowedOrigins = [
+  ...new Set([
+    clientUrl,
+    ...configuredOrigins,
+    'http://localhost:5173',
+    'http://127.0.0.1:5173',
+    'http://localhost:3000',
+  ]),
+];
+
+// Helper to validate origin against allowed origins and Vercel domains
+const isAllowedOrigin = (origin) => {
+  if (!origin) return true;
+  if (allowedOrigins.includes(origin)) return true;
+  if (process.env.NODE_ENV !== 'production') return true;
+  if (origin.endsWith('.vercel.app')) return true;
+  return false;
+};
 
 // Socket.IO configuration
 const io = new Server(server, {
   cors: {
-    origin: [clientUrl, 'http://localhost:5173', 'http://127.0.0.1:5173'],
+    origin: (origin, callback) => {
+      if (isAllowedOrigin(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Socket.IO CORS blocked origin'));
+      }
+    },
     methods: ['GET', 'POST'],
     credentials: true,
   },
@@ -51,19 +81,7 @@ app.use(
 app.use(
   cors({
     origin: function (origin, callback) {
-      // Allow requests with no origin (e.g. mobile apps, curl, Postman)
-      if (!origin) return callback(null, true);
-      const allowedOrigins = [
-        clientUrl,
-        'http://localhost:5173',
-        'http://127.0.0.1:5173',
-        'http://localhost:3000',
-      ];
-      if (
-        allowedOrigins.indexOf(origin) !== -1 ||
-        process.env.NODE_ENV !== 'production' ||
-        origin.endsWith('.vercel.app')
-      ) {
+      if (isAllowedOrigin(origin)) {
         callback(null, true);
       } else {
         callback(new Error('CORS not allowed for this origin'));
@@ -95,11 +113,15 @@ const authLimiter = rateLimit({
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
 
-// Health check endpoint
+// Health check endpoint with database connectivity check
 app.get('/api/health', (req, res) => {
-  res.status(200).json({
-    status: 'OK',
-    message: 'SkillSwap API is healthy and operational',
+  const isDbConnected = mongoose.connection.readyState === 1;
+  res.status(isDbConnected ? 200 : 503).json({
+    status: isDbConnected ? 'OK' : 'DEGRADED',
+    database: isDbConnected ? 'connected' : 'disconnected',
+    message: isDbConnected
+      ? 'SkillSwap API is healthy and operational'
+      : 'Database connection is not ready',
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development',
   });

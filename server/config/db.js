@@ -7,6 +7,11 @@ const connectDB = async () => {
     let mongoUri = process.env.MONGODB_URI;
 
     if (!mongoUri || mongoUri.trim() === '') {
+      if (process.env.NODE_ENV === 'production') {
+        console.error('FATAL: MONGODB_URI is not set in production environment variables.');
+        console.error('Please configure your MongoDB Atlas connection string in your hosting environment (e.g., Render Dashboard).');
+        process.exit(1);
+      }
       console.log('No MONGODB_URI provided in environment. Initializing MongoMemoryServer for development/testing...');
       try {
         const { MongoMemoryServer } = require('mongodb-memory-server');

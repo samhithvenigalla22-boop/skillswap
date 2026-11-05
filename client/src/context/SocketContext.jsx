@@ -14,7 +14,9 @@ export const SocketProvider = ({ children }) => {
 
   useEffect(() => {
     if (isAuthenticated && token) {
-      const socketUrl = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
+      const apiUrl = import.meta.env.VITE_API_URL;
+      const derivedSocketUrl = apiUrl ? apiUrl.replace(/\/api\/?$/, '') : null;
+      const socketUrl = import.meta.env.VITE_SOCKET_URL || derivedSocketUrl || 'http://localhost:5000';
       const newSocket = io(socketUrl, {
         auth: { token },
         transports: ['websocket', 'polling'],
