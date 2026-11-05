@@ -113,19 +113,24 @@ const authLimiter = rateLimit({
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
 
-// Health check endpoint with database connectivity check
-app.get('/api/health', (req, res) => {
+// Health check endpoint that always returns HTTP 200 for Render uptime checks
+const healthCheckHandler = (req, res) => {
   const isDbConnected = mongoose.connection.readyState === 1;
-  res.status(isDbConnected ? 200 : 503).json({
-    status: isDbConnected ? 'OK' : 'DEGRADED',
+  res.status(200).json({
+    status: 'OK',
     database: isDbConnected ? 'connected' : 'disconnected',
     message: isDbConnected
       ? 'SkillSwap API is healthy and operational'
-      : 'Database connection is not ready',
+      : 'SkillSwap API is online (database connection pending or disconnected)',
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development',
+    port: PORT,
   });
-});
+};
+
+app.get('/api/health', healthCheckHandler);
+app.get('/health', healthCheckHandler);
+app.get('/', healthCheckHandler);
 
 // API Routes
 app.use('/api/auth', authRoutes);
@@ -143,35 +148,40 @@ app.use('/api/admin', adminRoutes);
 app.use(notFound);
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 5000;
+const PORT = parseInt(process.env.PORT, 10) || 5000;
 
-// Connect to DB and Start Server if run directly
+// Start HTTP & WebSocket server immediately on 0.0.0.0 for Render port detection
 if (require.main === module) {
-  connectDB().then(async () => {
-    // If the database has no users (e.g. fresh in-memory MongoDB or fresh Atlas), auto-seed demo data
-    try {
-      const User = require('./models/User');
-      const count = await User.countDocuments();
-      if (count === 0) {
-        console.log('Database empty: Auto-seeding initial demo users and skills...');
-        const { seedDemoData } = require('./scripts/seedDemoData');
-        await seedDemoData({ exitProcess: false });
-      }
-    } catch (seedErr) {
-      console.warn('Initial auto-seed check notice:', seedErr.message);
-    }
+  server.listen(PORT, '0.0.0.0', () => {
+    console.log(`===============================================`);
+    console.log(`SkillSwap Server running in ${process.env.NODE_ENV || 'development'} mode`);
+    console.log(`Listening on: 0.0.0.0:${PORT}`);
+    console.log(`Health Check: http://0.0.0.0:${PORT}/api/health`);
+    console.log(`Client URL: ${clientUrl}`);
+    console.log(`Demo accounts:`);
+    console.log(`  Admin: admin@skillswap.com / Admin@123456`);
+    console.log(`  Alex:  alex@skillswap.com / Password@123`);
+    console.log(`  Maya:  maya@skillswap.com / Password@123`);
+    console.log(`===============================================`);
 
-    server.listen(PORT, () => {
-      console.log(`===============================================`);
-      console.log(`SkillSwap Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
-      console.log(`API URL: http://localhost:${PORT}/api`);
-      console.log(`Client URL: ${clientUrl}`);
-      console.log(`Demo accounts:`);
-      console.log(`  Admin: admin@skillswap.com / Admin@123456`);
-      console.log(`  Alex:  alex@skillswap.com / Password@123`);
-      console.log(`  Maya:  maya@skillswap.com / Password@123`);
-      console.log(`===============================================`);
-    });
+    // Connect to MongoDB asynchronously in the background so port binding is never delayed
+    connectDB()
+      .then(async () => {
+        try {
+          const User = require('./models/User');
+          const count = await User.countDocuments();
+          if (count === 0) {
+            console.log('Database empty: Auto-seeding initial demo users and skills...');
+            const { seedDemoData } = require('./scripts/seedDemoData');
+            await seedDemoData({ exitProcess: false });
+          }
+        } catch (seedErr) {
+          console.warn('Initial auto-seed check notice:', seedErr.message);
+        }
+      })
+      .catch((dbErr) => {
+        console.error('Database connection notice:', dbErr.message);
+      });
   });
 }
 

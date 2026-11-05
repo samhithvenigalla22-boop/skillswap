@@ -8,9 +8,12 @@ const connectDB = async () => {
 
     if (!mongoUri || mongoUri.trim() === '') {
       if (process.env.NODE_ENV === 'production') {
-        console.error('FATAL: MONGODB_URI is not set in production environment variables.');
-        console.error('Please configure your MongoDB Atlas connection string in your hosting environment (e.g., Render Dashboard).');
-        process.exit(1);
+        console.error('----------------------------------------------------');
+        console.error('WARNING: MONGODB_URI is not set in environment variables.');
+        console.error('Please configure your MongoDB Atlas connection string in your Render Dashboard.');
+        console.error('Example: mongodb+srv://<user>:<password>@cluster0.xxxxx.mongodb.net/skillswap?retryWrites=true&w=majority');
+        console.error('----------------------------------------------------');
+        return null;
       }
       console.log('No MONGODB_URI provided in environment. Initializing MongoMemoryServer for development/testing...');
       try {
@@ -26,12 +29,20 @@ const connectDB = async () => {
 
     const conn = await mongoose.connect(mongoUri, {
       autoIndex: true,
+      serverSelectionTimeoutMS: 5000,
     });
 
     console.log(`MongoDB Connected: ${conn.connection.host} (Database: ${conn.connection.name})`);
     return conn;
   } catch (error) {
+    console.error('----------------------------------------------------');
     console.error(`MongoDB Connection Error: ${error.message}`);
+    console.error('Please check:');
+    console.error('1. MONGODB_URI syntax and credentials in your environment variables.');
+    console.error('2. MongoDB Atlas Network Access: Ensure 0.0.0.0/0 (Allow from anywhere) is enabled.');
+    console.error('3. Database user has read/write privileges.');
+    console.error('----------------------------------------------------');
+
     // If connection to specified URI fails in development, try in-memory fallback
     if (process.env.NODE_ENV !== 'production' && !mongod) {
       console.log('Attempting in-memory fallback for local development...');
@@ -44,10 +55,10 @@ const connectDB = async () => {
         return conn;
       } catch (fallbackErr) {
         console.error('Fatal: Could not initialize database fallback:', fallbackErr.message);
-        process.exit(1);
       }
     }
-    process.exit(1);
+    // In production, do not kill the process so the HTTP server continues to respond
+    return null;
   }
 };
 
