@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
 import Button from '../components/common/Button';
-import { Sparkles, Mail, Lock, Eye, EyeOff, ShieldCheck, UserCheck } from 'lucide-react';
+import { Sparkles, Mail, Lock, Eye, EyeOff } from 'lucide-react';
 
 const LoginPage = () => {
   const { login } = useAuth();
@@ -25,11 +25,6 @@ const LoginPage = () => {
   const handleChange = (e) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
     if (error) setError('');
-  };
-
-  const handleFillDemo = (email, password) => {
-    setFormData({ email, password });
-    setError('');
   };
 
   const handleSubmit = async (e) => {
@@ -129,7 +124,8 @@ const LoginPage = () => {
               <button
                 type="button"
                 onClick={() => setShowPassword((prev) => !prev)}
-                className="absolute right-3 top-3 text-slate-400 hover:text-slate-600"
+                className="absolute right-3 top-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
@@ -141,40 +137,7 @@ const LoginPage = () => {
           </Button>
         </form>
 
-        {/* Demo Fast Fill Section */}
-        <div className="pt-2 space-y-2">
-          <div className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider text-center">
-            One-Click Demo Credentials
-          </div>
-          <div className="grid grid-cols-3 gap-2">
-            <button
-              type="button"
-              onClick={() => handleFillDemo('alex@skillswap.com', 'Password@123')}
-              className="p-2 text-center rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 hover:border-primary-400 text-[11px] font-medium transition-colors"
-            >
-              <UserCheck className="w-3.5 h-3.5 mx-auto mb-1 text-primary-500" />
-              Alex (User)
-            </button>
-            <button
-              type="button"
-              onClick={() => handleFillDemo('maya@skillswap.com', 'Password@123')}
-              className="p-2 text-center rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 hover:border-secondary-400 text-[11px] font-medium transition-colors"
-            >
-              <UserCheck className="w-3.5 h-3.5 mx-auto mb-1 text-secondary-500" />
-              Maya (User)
-            </button>
-            <button
-              type="button"
-              onClick={() => handleFillDemo('admin@skillswap.com', 'Admin@123456')}
-              className="p-2 text-center rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 hover:border-rose-400 text-[11px] font-medium transition-colors"
-            >
-              <ShieldCheck className="w-3.5 h-3.5 mx-auto mb-1 text-rose-500" />
-              Admin
-            </button>
-          </div>
-        </div>
-
-        <div className="text-center text-xs text-slate-500 dark:text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-800">
+        <div className="text-center text-xs text-slate-500 dark:text-slate-400 pt-4 border-t border-slate-100 dark:border-slate-800">
           Do not have an account?{' '}
           <Link
             to="/register"
