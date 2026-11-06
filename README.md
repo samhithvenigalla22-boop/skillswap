@@ -575,12 +575,12 @@ npm run generate:ppt
 
 ## 19. Team Member Details
 
-**Team Name:** [ENTER TEAM NAME]  
+**Team Name:** SKILL SWAPPERS  
 **Project Title:** SkillSwap – Learn One. Teach One.  
 
-- **Member 1 (Frontend Development & UI/UX):** [NAME AND REGISTRATION NUMBER]
-- **Member 2 (Backend Development & REST APIs):** [NAME AND REGISTRATION NUMBER]
-- **Member 3 (Database, Integration & DevOps):** [NAME AND REGISTRATION NUMBER]
+- **Member 1 (Frontend Development & UI/UX):** [samhith , 241fa04506]
+- **Member 2 (Backend Development & REST APIs):** [karthik , 241fa04713]
+- **Member 3 (Database, Integration & DevOps):** [jaswanth , 241fa04820]
 
 ---
 
